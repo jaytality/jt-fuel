@@ -1,0 +1,15 @@
+version: '3.3'
+
+services:
+  php:
+    environment:
+      VIRTUAL_HOST: ${PROJECTNAME}.local
+  
+  phpmyadmin:
+    environment:
+      VIRTUAL_HOST: ${PROJECTNAME}.db
+
+networks:
+    default:
+      external:
+        name: ${DEV_NETWORK}

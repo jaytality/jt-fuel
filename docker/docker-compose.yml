@@ -1,0 +1,57 @@
+version: '3.3'
+
+services:
+  mysql:
+    image: mysql:5.7
+    volumes:
+      - ../data/db:/var/lib/mysql
+    restart: always
+    container_name: ${COMPOSE_PROJECT_NAME}_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SQL_PASS}
+      MYSQL_DATABASE: ${COMPOSE_PROJECT_NAME}
+      MYSQL_USER: ${SQL_USER}
+      MYSQL_PASSWORD: ${SQL_PASS}
+    restart: always
+
+  php:
+    depends_on:
+      - mysql
+    image: php:7.2
+    build:
+     context: .
+     dockerfile: Dockerfile
+    links:
+     - mysql
+    volumes:
+     - ../code:/var/www/html
+     - ../data/storage:/var/www/html/storage
+     - ./php.ini:/usr/local/etc/php/conf.d/php.ini
+     - ./vhost.conf:/etc/apache2/sites-available/000-default.conf
+     - ../data/logs/error.log:/var/www/error.log
+     - ../data/logs/access.log:/var/www/access.log
+    environment:
+      VIRTUAL_HOST: ${WEB_HOST}
+      LETSENCRYPT_HOST: ${WEB_HOST}
+      LETSENCRYPT_EMAIL: ${SSL_MAIL}
+      DB_HOST: mysql
+      DB_PASSWORD: ${SQL_PASS}
+    restart: always
+    container_name: ${COMPOSE_PROJECT_NAME}_web
+
+  phpmyadmin:
+    depends_on:
+      - mysql
+    image: phpmyadmin/phpmyadmin
+    environment:
+        VIRTUAL_HOST: db.${WEB_HOST}
+        PMA_HOST: ${COMPOSE_PROJECT_NAME}_db
+    container_name: ${COMPOSE_PROJECT_NAME}_pma
+    volumes:
+     - ../data/pma:/sessions
+    restart: always
+
+networks:
+    default:
+      external:
+        name: ${PROD_NETWORK}
